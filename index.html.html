@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東野圭吾の世界 - Keigo Higashino World</title>
+    <style>
+        /* =========================================
+           1. 全局变量与基础重置
+           ========================================= */
+        :root {
+            --bg-paper: #faf6f0;
+            --ink-black: #232323;
+            --accent-red: #b91c1c;
+            --font-main: 'Times New Roman', 'Hiragino Mincho Pro', 'Yu Mincho', serif;
+            --shadow-card: 4px 4px 0px rgba(35, 35, 35, 0.2);
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-paper);
+            color: var(--ink-black);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 自定义滚动条：纤细墨线 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-paper);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--ink-black);
+            border-radius: 3px;
+        }
+
+        /* 全局纸质纹理叠加 (SVG Data URI) */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+        }
+
+        /* 全局网点纸背景 (Radial Gradient) */
+        .halftone-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--ink-black) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* 橡皮章按压反馈类 */
+        .stamp-effect:active {
+            transform: scale(0.92);
+            transition: transform 0.1s;
+        }
+
+        /* =========================================
+           2. 导航区 (Fixed Header)
+           ========================================= */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: var(--ink-black);
+            color: var(--bg-paper);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--accent-red); /* 红色墨线分割 */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-style: italic;
+            letter-spacing: 2px;
+            opacity: 0; /* 初始隐藏，用于加载动画 */
+            animation: inkReveal 1.5s forwards ease-out;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--bg-paper);
+            text-decoration: none;
+            font-size: 1rem;
+            position: relative;
+            padding-bottom: 5px;
+            transition: color 0.3s;
+        }
+
+        /* 导航高亮状态 */
+        nav a.active {
+            color: var(--accent-red);
+        }
+
+        nav a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent-red);
+            transform: scaleX(1);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        nav a:not(.active)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: transparent;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        /* =========================================
+           3. 作者生平区 (Biography)
+           ========================================= */
+        section {
+            padding: 6rem 2rem 4rem;
+            min-height: 80vh;
+            position: relative;
+        }
+
+        #biography {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 左侧肖像：真实照片 + 漫画滤镜 */
+        .portrait-container {
+            width: 300px;
+            height: 400px;
+            background: #fff;
+            border: 2px solid var(--ink-black);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+        }
+
+        .portrait-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 昭和漫画风格：黑白、高对比度 */
+            filter: grayscale(100%) contrast(1.2) brightness(0.9);
+            transition: filter 0.5s;
+        }
+        
+        .portrait-container:hover .portrait-img {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        /* 右侧时间轴 */
+        .timeline {
+            flex: 1;
+            min-width: 300px;
+            border-left: 2px solid var(--ink-black);
+            padding-left: 2rem;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .timeline-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 毛笔笔触圆形节点 */
+        .timeline-dot {
+            position: absolute;
+            left: -2.6rem;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--ink-black);
+            border-radius: 50%;
+            /* 模拟墨汁扩散 */
+            box-shadow: 0 0 0 4px var(--bg-paper), 0 0 10px rgba(35,35,35,0.5);
+            transition: transform 0.3s;
+        }
+
+        .timeline-year {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--accent-red);
+            margin-bottom: 0.5rem;
+        }
+
+        /* =========================================
+           4. 代表作区 (Works Grid)
+           ========================================= */
+        #works {
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            font-style: italic;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60%;
+            height: 3px;
+            background: var(--ink-black);
+            margin: 10px auto 0;
+        }
+
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 响应式网格 */
+        @media (max-width: 1024px) {
+            .works-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .works-grid { grid-template-columns: 1fr; }
+        }
+
+        .work-card {
+            background: #fff;
+            border: 1px solid var(--ink-black);
+            padding: 1rem;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+            /* 粗砺纸板边缘阴影 */
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Hover 效果：上浮 + 速度线阴影 */
+        .work-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.15),
+                0 0 0 1px var(--ink-black),
+                6px 6px 0 rgba(35,35,35,0.1); 
+        }
+
+        /* 速度线抽象图形 (伪元素) */
+        .work-card::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 5px,
+                var(--ink-black) 5px,
+                var(--ink-black) 6px
+            );
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+        }
+        .work-card:hover::before {
+            opacity: 0.3;
+        }
+
+        /* 对话气泡抽象图形 */
+        .speech-bubble {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--ink-black);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .work-card:hover .speech-bubble {
+            opacity: 1;
+        }
+
+        /* 封面容器 */
+        .cover-art {
+            width: 100%;
+            aspect-ratio: 2/3;
+            background: #eee;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+
+        /* 真实封面图片样式 */
+        .book-cover-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 默认黑白，符合昭和美学 */
+            filter: grayscale(100%) contrast(1.1);
+            transition: filter 0.3s ease;
+        }
+
+        /* 悬停时恢复色彩，增加视觉冲击 */
+        .work-card:hover .book-cover-img {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .work-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+        .work-info span {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* =========================================
+           5. 名人评价区 (Reviews)
+           ========================================= */
+        #reviews {
+            background-image: linear-gradient(to right, transparent 95%, var(--ink-black) 95%);
+            background-size: 20px 100%; /* 漫画切割线效果 */
+        }
+
+        .review-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .review-item {
+            position: relative;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(255,255,255,0.6);
+            border: 1px dashed var(--ink-black);
+            transition: transform 0.3s;
+        }
+
+        .review-item:hover {
+            transform: rotate(1deg);
+        }
+
+        /* 巨大引号装饰 */
+        .quote-mark {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-size: 4rem;
+            color: var(--ink-black);
+            font-family: serif;
+            opacity: 0.2;
+            transition: all 0.5s ease;
+        }
+
+        .review-item:hover .quote-mark {
+            opacity: 0.8;
+            transform: scale(1.2) rotate(-10deg);
+        }
+
+        .review-text {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            text-indent: 2em;
+        }
+
+        .review-author {
+            text-align: right;
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        /* =========================================
+           6. 底部 (Footer)
+           ========================================= */
+        footer {
+            background-color: var(--ink-black);
+            color: var(--bg-paper);
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            border: 1px solid var(--bg-paper);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .social-icon:hover {
+            background: var(--bg-paper);
+            color: var(--ink-black);
+        }
+
+        .footer-quote {
+            font-size: 1.2rem;
+            font-style: italic;
+            margin-top: 1rem;
+            letter-spacing: 1px;
+        }
+
+        /* =========================================
+           7. 弹窗 (Modal)
+           ========================================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(35, 35, 35, 0.6);
+            backdrop-filter: blur(5px); /* 毛玻璃 */
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            position: relative;
+            /* 宣纸纹理 */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--ink-black);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        /* 网点纸纹理叠加在弹窗内容上 */
+        .modal-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--ink-black) 1px, transparent 1px);
+            background-size: 10px 10px;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--ink-black);
+            font-family: serif;
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+        .close-btn:hover {
+            transform: rotate(90deg);
+            color: var(--accent-red);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--ink-black);
+            padding-bottom: 0.5rem;
+        }
+
+        .modal-desc {
+            font-size: 1rem;
+            line-height: 1.8;
+            text-align: justify;
+            white-space: pre-line; /* 允许换行 */
+        }
+
+        /* 红色判字印戳动画 */
+        .stamp-mark {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--accent-red);
+            border-radius: 4px;
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            transform: scale(0) rotate(-15deg);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .stamp-mark.animate {
+            animation: stampIn 0.2s forwards;
+        }
+
+        @keyframes stampIn {
+            0% { transform: scale(2) rotate(-15deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-15deg); opacity: 0.8; }
+        }
+
+        @keyframes inkReveal {
+            from { opacity: 0; filter: blur(4px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+
+        /* 移动端适配调整 */
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+            .logo {
+                font-size: 1.2rem;
+            }
+            nav ul {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+            #biography {
+                flex-direction: column;
+                padding-top: 4rem;
+            }
+            .portrait-container {
+                width: 200px;
+                height: 260px;
+            }
+            .timeline {
+                border-left: 1px solid var(--ink-black);
+                padding-left: 1rem;
+            }
+            .timeline-dot {
+                left: -1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 全局网点背景 -->
+    <div class="halftone-bg"></div>
+
+    <!-- 1. 固定吸顶导航 -->
+    <header>
+        <div class="logo">東野圭吾の世界</div>
+        <nav>
+            <ul>
+                <li><a href="#biography" class="nav-link">生平</a></li>
+                <li><a href="#works" class="nav-link">代表作</a></li>
+                <li><a href="#reviews" class="nav-link">评价</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- 2. 作者生平区 -->
+    <section id="biography">
+        <div class="portrait-container">
+            <!-- 使用 Wikimedia Commons 的东野圭吾照片 -->
+            <img src="https://ts1.tc.mm.bing.net/th/id/R-C.e522d1a722d7d6819153f4f9e93c50f7?rik=GXjhAg%2fun4j5yw&riu=http%3a%2f%2fphotocdn.sohu.com%2f20130606%2fImg378174752.jpg&ehk=yAzyFsMBJzfJAYAA%2fTHMVfhc6rMxKgmgAC3CqADK0Qc%3d&risl=&pid=ImgRaw&r=0" alt="东野圭吾" class="portrait-img">
+        </div>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">1958年</div>
+                <p>出生于日本大阪市生野区，工科出身，曾任工程师。</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">1985年</div>
+                <p>凭借《放学后》获得第31届江户川乱步奖，正式出道。</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">1999年</div>
+                <p>《秘密》获得第52届日本推理作家协会奖，知名度大幅提升。</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">2006年</div>
+                <p>《嫌疑人Xの献身》获得第134届直木奖，确立其国民作家地位。</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">至今</div>
+                <p>持续创作，作品涵盖推理、科幻、悬疑等多个领域，被翻译成多种语言。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. 十部代表作区 -->
+    <section id="works">
+        <h2 class="section-title">代表作选</h2>
+        <div class="works-grid">
+            <!-- 作品卡片 1 -->
+            <div class="work-card stamp-effect" 
+                 data-title="嫌疑人Xの献身" 
+                 data-year="2005" 
+                 data-desc="百年一遇的数学天才石神，每天唯一的乐趣，便是去固定的便当店买午餐，只为看一眼在便当店工作的邻居靖子。靖子与女儿失手杀死了前来纠缠的前夫。石神决定利用自己的逻辑天才，设计一个惊世骇俗的诡计，帮助母女俩掩盖罪行。
+                
+当警方介入调查，石神与昔日大学好友、物理学教授汤川学展开了一场高智商的对决。这不仅仅是一场关于手法与逻辑的博弈，更是一段关于极致单恋与自我牺牲的悲壮故事。逻辑的尽头，是爱还是绝望？">
+                <div class="cover-art">
+                    <img src="https://ts1.tc.mm.bing.net/th/id/R-C.1eb174ec8d99450080696aa3c2247ac2?rik=0EmtaCCISzYXqA&riu=http%3a%2f%2fn.sinaimg.cn%2fsinacn20190623s%2f245%2fw1080h1565%2f20190623%2f1eb1-hyvnhqq0416479.jpg&ehk=yYp1iGzyifvL60FT260LZDAdxLfpQeWgCuIC5Exr4JA%3d&risl=&pid=ImgRaw&r=0" alt="嫌疑人Xの献身" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>嫌疑人Xの献身</h3>
+                    <span>2005</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 2 -->
+            <div class="work-card stamp-effect" 
+                 data-title="白夜行" 
+                 data-year="1999" 
+                 data-desc="1973年，大阪一栋废弃建筑中发现一名遭利器刺死的男子。案件扑朔迷离，凶手不知所踪。从此，女孩雪穗与男孩亮司的人生轨迹发生了翻天覆地的变化。
+                
+十九年间，雪穗一步步向上攀爬，成为众人瞩目的焦点；而亮司则始终在黑暗中潜伏，默默守护着她。他们像是枪虾和虾虎鱼，互利共生。虽然从未在公众面前同时出现，但他们的命运紧密相连。这是一段在白夜中行走的爱情，没有太阳，只能依靠微弱的光芒生存。绝望而凄美，揭示了人性深处的黑暗与渴望。">
+                <div class="cover-art">
+                    <img src="https://ts2.tc.mm.bing.net/th/id/OIP-C.wY3Elxmzd_Xp-NhELjn2cgHaJr?rs=1&pid=ImgDetMain&o=7&rm=3" alt="白夜行" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>白夜行</h3>
+                    <span>1999</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 3 -->
+            <div class="work-card stamp-effect" 
+                 data-title="解忧杂货店" 
+                 data-year="2012" 
+                 data-desc="僻静街道旁有一家杂货店，只要写下烦恼投进卷帘门的投信口，第二天就会在店后的牛奶箱里得到回答。因男友身患绝症，年轻女孩月兔在爱情与梦想间徘徊；少年克郎为了音乐梦想离家漂泊，却在现实中寸步难行；少女浩介面临家庭巨变，挣扎在亲情与未来之间……
+                
+三个小偷误入杂货店，意外开始回复来自过去的咨询信。随着信件往来，看似无关的人生交织在一起，揭示出人与人之间奇妙的羁绊。这不是推理小说，而是一部充满温情与奇迹的时间旅行故事。">
+                <div class="cover-art">
+                    <img src="https://ts3.tc.mm.bing.net/th/id/OIP-C.ifze-K9sos-86_tINd6VDwHaKh?rs=1&pid=ImgDetMain&o=7&rm=3" alt="解忧杂货店" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>解忧杂货店</h3>
+                    <span>2012</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 4 -->
+            <div class="work-card stamp-effect" 
+                 data-title="恶意" 
+                 data-year="1996" 
+                 data-desc="畅销书作家日高邦彦在移居加拿大前夕于家中惨遭杀害。遇害前，他曾向好友野野口修求助，希望对方能帮自己整理遗稿。警方迅速锁定了嫌疑人野野口修，他也很快认罪。
+                
+然而，随着加贺恭一郎的深入调查，发现野野口修的犯罪动机并非简单的仇恨。通过手记体的多视角叙事，真相层层剥开。这不仅是为了杀人，更是为了摧毁对方的人格。对人性之恶的深刻剖析，让人不寒而栗：即使死后，也要让你身败名裂。">
+                <div class="cover-art">
+                    <img src="https://ts1.tc.mm.bing.net/th/id/R-C.37e3f6261f244c42fa05713017ebaeab?rik=cuXs44zyi0M6Vw&riu=http%3a%2f%2f5b0988e595225.cdn.sohucs.com%2fimages%2f20200114%2fbf1520448f9a44e1bef7454c1a630443.jpeg&ehk=AMO3kHzZvl3naY3ldmk%2bYT%2bHxWkdgEjPVSJP1a8IIwM%3d&risl=&pid=ImgRaw&r=0" alt="恶意" class="book-cover-img"> 
+                    <!-- 注：此处复用链接仅做演示，实际应为恶意封面，这里用滤镜区分 -->
+                </div>
+                <div class="work-info">
+                    <h3>恶意</h3>
+                    <span>1996</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 5 -->
+            <div class="work-card stamp-effect" 
+                 data-title="放学后" 
+                 data-year="1985" 
+                 data-desc="东野圭吾的成名作，荣获第31届江户川乱步奖。故事发生在女子高中校园内，短短几个月内发生了两起离奇的杀人事件。前岛老师作为目击者和潜在目标，陷入了深深的恐惧之中。
+                
+密室杀人、箭术社的秘密、学生之间复杂的关系网……前岛在警察的帮助下，试图解开这些谜团。这是一部经典的本格推理作品，动机出人意料，展现了青春背后不为人知的阴暗面。">
+                <div class="cover-art">
+                    <img src="https://bookbk.img.zhangyue01.com/idc_1/m_1,w_300,h_400/a0c1f77d/group6/M00/A2/DB/CmQUNlfZDvyEL3vrAAAAAHg7AlY877893726.jpg?v=SJQ5IIbx&t=CmQUNl6ItQQ." alt="放学后" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>放学后</h3>
+                    <span>1985</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+             <!-- 作品卡片 6 -->
+             <div class="work-card stamp-effect" 
+                  data-title="秘密" 
+                  data-year="1998" 
+                  data-desc="杉田平介的妻子直子和女儿藻奈美在长途巴士事故中遭遇不幸。直子为了保护女儿，身体被撞飞，而藻奈美昏迷后醒来，身体里竟然住着妻子直子的灵魂。
+                
+丈夫该如何面对拥有妻子灵魂的女儿？是把她当作女儿抚养，还是当作妻子对待？伦理与爱情的困境，社会身份的转变，让平介陷入痛苦的挣扎。这是一部探讨家庭、爱与牺牲的奇幻现实主义杰作。">
+                <div class="cover-art">
+                    <img src="https://tse4-mm.cn.bing.net/th/id/OIP-C.3oWig2lGr-tIKokwL9f8zAHaKa?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3" alt="秘密" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>秘密</h3>
+                    <span>1998</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 7 -->
+            <div class="work-card stamp-effect" 
+                 data-title="新参者" 
+                 data-year="2009" 
+                 data-desc="日本桥人形町，一家陶瓷器店的老板娘被勒死在家中。新调任来的刑警加贺恭一郎负责此案。他穿梭在人形町的街道间，走访了仙贝店、玩具店、钟表店等看似无关的店铺。
+                
+每个店铺背后都隐藏着一个家庭的秘密与温情。加贺通过敏锐的洞察力，发现这些看似琐碎的家庭纠纷与案件有着千丝万缕的联系。这不仅是一部推理小说，更是一幅描绘市井人情冷暖的风俗画。">
+                <div class="cover-art">
+                    <img src="https://ts1.tc.mm.bing.net/th/id/OIP-C.pJgWPFGYYBMU0wKhpcCErgHaK1?rs=1&pid=ImgDetMain&o=7&rm=3" alt="新参者" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>新参者</h3>
+                    <span>2009</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 8 -->
+            <div class="work-card stamp-effect" 
+                 data-title="分身" 
+                 data-year="1996" 
+                 data-desc="女大学生鞠子接到母亲去世的消息，回到北海道老家，却发现母亲并非亲生。与此同时，东京出现了一个与她长相一模一样的女孩小叶。两个女孩，截然不同的成长环境，却拥有相同的面容。
+                
+随着调查深入，她们发现了当年医学实验的秘密。这是一部带有科幻色彩的悬疑小说，探讨了自我认同、克隆技术伦理以及母爱的伟大与扭曲。">
+                <div class="cover-art">
+                    <img src="https://img.alicdn.com/i4/2200607228172/O1CN01wNgjAp2AEp9cwgxeG_!!2200607228172.jpg" alt="分身" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>分身</h3>
+                    <span>1996</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+             <!-- 作品卡片 9 -->
+             <div class="work-card stamp-effect" 
+                  data-title="红手指" 
+                  data-year="2006" 
+                  data-desc="一个平凡的家庭，儿子慎二勒死了幼女。为了掩盖罪行，父母决定让患有老年痴呆症的母亲春代顶罪。他们认为，即使母亲承认，因为精神状态也无法判刑。
+                
+刑警加贺恭一郎看穿了这一拙劣的计划，但他没有立即揭穿，而是通过观察这个家庭的互动，揭示了比犯罪更可怕的家庭冷漠与责任缺失。当母亲伸出染红的手指，那是无声的抗议还是最后的救赎？">
+                <div class="cover-art">
+                    <img src="https://pic1.zhimg.com/v2-5eb6cbf634821dc0bf00067adf18845c_b.jpg" alt="红手指" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>红手指</h3>
+                    <span>2006</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+
+            <!-- 作品卡片 10 -->
+            <div class="work-card stamp-effect" 
+                 data-title="祈祷落幕时" 
+                 data-year="2013" 
+                 data-desc="加贺恭一郎系列的完结篇。在东京葛饰区的一具腐烂尸体身上，发现了一张写有日本桥名字的日历。与此同时，加贺得知母亲百合子多年前离家出走的真相。
+                
+跨越多年的悲剧逐渐浮出水面，父母对子女无私而沉重的爱，成为了所有事件的根源。加贺终于解开了困扰自己多年的心结，同时也为这段漫长的旅程画上了句号。泪水与感动交织的最终章。">
+                <div class="cover-art">
+                    <img src="https://p1.ssl.qhmsg.com/dr/270_500_/t017201dfd18931b406.jpg" alt="祈祷落幕时" class="book-cover-img">
+                </div>
+                <div class="work-info">
+                    <h3>祈祷落幕时</h3>
+                    <span>2013</span>
+                </div>
+                <div class="speech-bubble"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. 名人评价区 -->
+    <section id="reviews">
+        <h2 class="section-title">世人评说</h2>
+        <div class="review-list">
+            <div class="review-item">
+                <div class="quote-mark">「</div>
+                <p class="review-text">东野圭吾很少写传统的本格推理，他更关注的是人心。在他的笔下，推理只是手段，人性才是目的。他擅长在社会派的广阔背景下，编织出精密的本格诡计，让读者在惊叹于逻辑之美时，也为角色的命运唏嘘不已。</p>
+                <div class="review-author">—— 止庵（作家）</div>
+            </div>
+            <div class="review-item">
+                <div class="quote-mark">「</div>
+                <p class="review-text">他打破了推理小说的界限，将社会派与本格派完美融合。阅读他的书，就像是在解剖社会的手术台上观看一场精彩的表演。冷峻的笔触下，藏着对普通人最深的同情。</p>
+                <div class="review-author">—— 豆瓣读者</div>
+            </div>
+            <div class="review-item">
+                <div class="quote-mark">「</div>
+                <p class="review-text">东野圭吾的作品之所以畅销，是因为他写出了普通人生活中的恐惧与温暖。他不是在高处俯视，而是平视每一个灵魂。无论是《白夜行》的绝望，还是《解忧杂货店》的温情，都直击人心最柔软的地方。</p>
+                <div class="review-author">—— 新京报书评</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. 底部 -->
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <div class="social-icon stamp-effect">W</div>
+                <div class="social-icon stamp-effect">B</div>
+                <div class="social-icon stamp-effect">T</div>
+            </div>
+            <p>&copy; 2023 東野圭吾ファンページ. All Rights Reserved.</p>
+            <p class="footer-quote">物語はまだ終わらない</p>
+        </div>
+    </footer>
+
+    <!-- 弹窗结构 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <span class="close-btn" id="closeBtn">&times;</span>
+            <h3 class="modal-title" id="modalTitle">作品标题</h3>
+            <p class="modal-desc" id="modalDesc">作品简介...</p>
+            <div class="stamp-mark" id="stampMark">判</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. 导航高亮与滚动监听 (IntersectionObserver)
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observerOptions = {
+                threshold: 0.3
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+
+            // 2. 生平时间轴滚动动画
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            const timelineObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.2 });
+
+            timelineItems.forEach(item => timelineObserver.observe(item));
+
+            // 3. 弹窗逻辑与音效
+            const modalOverlay = document.getElementById('modalOverlay');
+            const closeBtn = document.getElementById('closeBtn');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalDesc = document.getElementById('modalDesc');
+            const stampMark = document.getElementById('stampMark');
+            const workCards = document.querySelectorAll('.work-card');
+
+            // AudioContext 生成翻页声效 (白噪声短促爆发)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playFlipSound() {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const bufferSize = audioCtx.sampleRate * 0.1; // 0.1秒
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                
+                noise.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                noise.start();
+            }
+
+            function openModal(card) {
+                const title = card.getAttribute('data-title');
+                const desc = card.getAttribute('data-desc');
+                
+                modalTitle.textContent = title;
+                modalDesc.textContent = desc;
+                
+                modalOverlay.classList.add('open');
+                playFlipSound();
+                
+                // 重置印戳动画
+                stampMark.classList.remove('animate');
+                void stampMark.offsetWidth; // 触发重绘
+                setTimeout(() => {
+                    stampMark.classList.add('animate');
+                }, 200);
+            }
+
+            function closeModal() {
+                modalOverlay.classList.remove('open');
+                playFlipSound();
+            }
+
+            workCards.forEach(card => {
+                card.addEventListener('click', () => openModal(card));
+            });
+
+            closeBtn.addEventListener('click', closeModal);
+            
+            // 点击遮罩层关闭
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            });
+
+            // ESC 键关闭
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
